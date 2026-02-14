@@ -1,0 +1,108 @@
+version: '3.8'
+services:
+
+  nginx:
+    image: nginx:1.29.5
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro 
+    ports:
+      - "80:80"
+    networks:
+      - do
+  rabbitmq-service:
+    image: rabbitmq:4-management-alpine
+    networks:
+      - do 
+
+  database-service:
+    image: postgres:18.1
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/dblog
+      POSTGRES_PASSWORD_FILE: /run/secrets/dbpas
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - do
+    secrets:
+      - dblog
+      - dbpas
+
+  session-service:
+    image: lilobein/session-service:1.0
+    env_file:
+      - ./session-service/.env
+    expose:
+      - 8081
+    networks:
+      - do
+
+
+  hotel-service:
+    image: lilobein/hotel-service:1.0
+    env_file:
+      - ./hotel-service/.env
+    expose: 
+      - "8082"
+    networks:
+      - do
+
+
+  payment-service:
+    image: lilobein/payment-service:1.0
+    env_file:
+      - ./payment-service/.env
+    expose:
+      - "8084"
+    networks:
+      - do
+
+
+  loyalty-service:
+    image: lilobein/loyalty-service:1.0
+    env_file:
+      - ./loyalty-service/.env
+    expose:
+      - "8085"
+    networks:
+      - do
+
+
+  report-service:
+    image: lilobein/report-service:1.0
+    env_file:
+      - ./report-service/.env
+    expose:
+      - "8086"
+    networks:
+      - do
+
+
+  booking-service:
+    image: lilobein/booking-service:1.0
+    env_file:
+      - ./booking-service/.env
+    expose:
+      - "8083"
+    networks:
+      - do
+
+
+  gateway-service:
+    image: lilobein/gateway-service:1.0
+    env_file:
+      - ./gateway-service/.env
+    expose:
+      - 8087
+    networks:
+      - do
+
+networks:
+  do:
+    driver: overlay
+    attachable: true
+
+secrets:
+  dblog:
+    external: true
+  dbpas:
+    external: true
