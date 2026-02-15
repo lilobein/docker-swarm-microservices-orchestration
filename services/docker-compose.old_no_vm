@@ -1,0 +1,124 @@
+services:
+  rabbitmq-service:
+    image: rabbitmq:4-management-alpine
+    expose:
+      - 5672
+    networks:
+      - do
+
+  database-service:
+    image: postgres:18.1
+    container_name: database
+    env_file:
+      - ./database/.env
+    expose:
+      - 5432
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - do
+
+  session-service:
+    build: ./session-service/
+    image: lilobein/session-service:2.0
+    container_name: session-service
+    env_file:
+      - ./session-service/.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - database-service
+    networks:
+      - do
+
+  hotel-service:
+    build: ./hotel-service/
+    container_name: hotel-service
+    image: lilobein/hotel-service:2.0
+    env_file:
+      - ./hotel-service/.env
+    expose:
+      - 8082
+    depends_on:
+      - database-service
+    networks:
+      - do
+  payment-service:
+    build: ./payment-service/
+    image: lilobein/payment-service:2.0
+    container_name: payment-service
+    env_file:
+      - ./payment-service/.env
+    expose:
+      - 8084
+    depends_on:
+      - database-service
+    networks:
+      - do
+  loyalty-service:
+    build: ./loyalty-service/
+    image: lilobein/loyalty-service:2.0
+    container_name: loyalty-service
+    expose:
+      - 8085
+    env_file:
+      - ./loyalty-service/.env
+    depends_on:
+      - database-service
+    networks:
+      - do
+  report-service:
+    build: ./report-service
+    image: lilobein/report-service:2.0
+    container_name: report-service
+    env_file:
+      - ./report-service/.env
+    expose:
+      - 8086
+    depends_on:
+      - rabbitmq-service
+      - database-service
+    networks:
+      - do
+
+  booking-service:
+    build: ./booking-service/
+    image: lilobein/booking-service:2.0
+    container_name: booking-service
+    env_file:
+      - ./booking-service/.env
+    expose:
+      - 8083
+    depends_on:
+      - database-service
+      - rabbitmq-service
+      - hotel-service
+      - loyalty-service
+      - payment-service
+    networks:
+      - do
+
+  gateway-service:
+    build: ./gateway-service/
+    image: lilobein/gateway-service:2.0
+    container_name: gateway-service
+    env_file:
+      - ./gateway-service/.env
+    depends_on:
+      - database-service
+      - rabbitmq-service
+      - session-service
+      - loyalty-service
+      - payment-service
+      - booking-service
+      - report-service
+    ports:
+      - "8087:8087"
+    networks:
+      - do
+
+networks:
+  do:
+    driver: bridge
+
+      
